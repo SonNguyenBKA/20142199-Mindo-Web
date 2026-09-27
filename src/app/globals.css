@@ -1,26 +1,267 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+  /* One coin-flip turn of the Peer artwork on card hover. */
+  --animate-peer-flip: peer-flip 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+
+  @keyframes peer-flip {
+    from {
+      transform: rotateY(0deg);
+    }
+    to {
+      transform: rotateY(360deg);
+    }
+  }
+
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-be-vietnam-pro);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-be-vietnam-pro);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-overlay: var(--overlay);
+  --color-input-bg: var(--input-bg);
+  --color-placeholder: var(--placeholder);
+  --color-disabled: var(--disabled);
+  --shadow-card: var(--shadow-card);
+  --shadow-icon-tile: var(--shadow-icon-tile);
+  --shadow-brand-button: var(--shadow-brand-button);
+  --color-link: var(--link);
+  --color-info-soft: var(--info-soft);
+  --color-avatar-soft: var(--avatar-soft);
+  --color-success-strong: var(--success-strong);
+  --color-on-dark-soft: var(--on-dark-soft);
+  --color-initials: var(--initials);
+  --color-surface-strong: var(--surface-strong);
+  --color-artwork-from: var(--artwork-from);
+  --color-artwork-to: var(--artwork-to);
+  --color-benefit: var(--benefit);
+  --color-benefit-soft: var(--benefit-soft);
+  --color-brand-deep: var(--brand-deep);
+  --color-profile-from: var(--profile-from);
+  --color-profile-to: var(--profile-to);
+  --color-on-dark-muted: var(--on-dark-muted);
+  --color-on-dark-link: var(--on-dark-link);
+  --color-kyc-verified: var(--kyc-verified);
+  --color-kyc-verified-soft: var(--kyc-verified-soft);
+  --color-tier-gold: var(--tier-gold);
+  --color-tier-gold-label: var(--tier-gold-label);
+  --color-tier-gold-border: var(--tier-gold-border);
+  --color-tier-gold-from: var(--tier-gold-from);
+  --color-tier-gold-to: var(--tier-gold-to);
+  --color-tier-platinum: var(--tier-platinum);
+  --color-tier-diamond: var(--tier-diamond);
+  --color-referral-from: var(--referral-from);
+  --color-referral-to: var(--referral-to);
+  --color-referral-border: var(--referral-border);
+  --color-referral-dash: var(--referral-dash);
+  --color-referral-label: var(--referral-label);
+  --color-referral-muted: var(--referral-muted);
+  --radius-card: var(--radius-card-value);
+  --radius-panel: var(--radius-panel-value);
+  --radius-field: var(--radius-field-value);
+  --radius-otp: var(--radius-otp-value);
+  --radius-action: var(--radius-action-value);
+  --radius-control: var(--radius-control-value);
+  --radius-checkbox: var(--radius-checkbox-value);
+  --radius-block: var(--radius-block-value);
+  --radius-tile: var(--radius-tile-value);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* ===== Mindo design tokens (source: Figma "Desktop · Đăng nhập · Đăng ký") ===== */
+  --background: #f5f7fa;
+  --foreground: #021c41;
+  --card: #ffffff;
+  --card-foreground: #021c41;
+  --popover: #ffffff;
+  --popover-foreground: #021c41;
+  --primary: #021c41;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f7fa;
+  --secondary-foreground: #021c41;
+  --muted: #f5f7fa;
+  --muted-foreground: #617084;
+  --accent: #f5f7fa;
+  --accent-foreground: #021c41;
+  --destructive: #d93036;
+  --destructive-soft: #fce9eb;
+  --success: #b4d001;
+  --success-soft: #eaf2c8;
+  --success-foreground: #4d7c0f;
+  --warning-soft: #fdefd3;
+  --warning-foreground: #8a5a00;
+  --overlay: rgb(2 28 65 / 0.32);
+  --border: #e9edf2;
+  --input: #e9edf2;
+  --input-bg: #f9fafb;
+  --placeholder: #7d899a;
+  --disabled: #b9c2cf;
+  --ring: #021c41;
+  --shadow-card: 0 12px 32px 0 rgb(2 28 65 / 0.08);
+  /* ===== Account screen (Figma "Tài khoản của tôi") ===== */
+  --link: #2f5fa7;
+  --info-soft: #eef4fd;
+  --avatar-soft: #eef3d8;
+  /* ===== Peer screens (Figma "Desktop · Peer") ===== */
+  --success-strong: #1f8a5b;
+  --on-dark-soft: #dce4f0;
+  --initials: #e6eefa;
+  --surface-strong: #eef2f7;
+  --artwork-from: #021c41;
+  --artwork-to: #0d335e;
+  --benefit: #617b22;
+  --benefit-soft: #f3f7df;
+  --brand-deep: #0b2858;
+  --profile-from: #0b2e5c;
+  --profile-to: #021c41;
+  --on-dark-muted: #b9c6da;
+  --on-dark-link: #9cc3ff;
+  --kyc-verified: #a7f0c8;
+  --kyc-verified-soft: rgb(31 138 91 / 0.22);
+  --tier-gold: #ffd76a;
+  --tier-gold-label: #ffe7a3;
+  --tier-gold-border: rgb(255 215 106 / 0.35);
+  --tier-gold-from: rgb(255 200 61 / 0.2);
+  --tier-gold-to: rgb(255 200 61 / 0.04);
+  --tier-platinum: #e3e9f2;
+  --tier-diamond: #8fe3ff;
+  --referral-from: #f6f9fe;
+  --referral-to: #e2ecfa;
+  --referral-border: #d5e1f2;
+  --referral-dash: #a9c0e2;
+  --referral-label: #5a78a6;
+  --referral-muted: #5e6f86;
+  --shadow-icon-tile: 0 4px 10px 0 rgb(59 106 176 / 0.16);
+  --shadow-brand-button: 0 3px 8px 0 rgb(11 40 88 / 0.2);
+  /* Semantic radii */
+  --radius-card-value: 28px;
+  --radius-panel-value: 20px;
+  --radius-field-value: 16px;
+  --radius-otp-value: 14px;
+  --radius-action-value: 14px;
+  --radius-control-value: 12px;
+  --radius-checkbox-value: 6px;
+  --radius-block-value: 16px;
+  --radius-tile-value: 10px;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 1rem;
+  --sidebar: #021c41;
+  --sidebar-foreground: #8fa2bd;
+  --sidebar-primary: #b4d001;
+  --sidebar-primary-foreground: #021c41;
+  --sidebar-accent: #0b2e5c;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #10305c;
+  --sidebar-ring: #b4d001;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }
