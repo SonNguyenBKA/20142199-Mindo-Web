@@ -6,6 +6,7 @@ import * as React from "react"
 import { AuthCard } from "@/components/auth/auth-card"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import {
+  createHttpQrAuthService,
   createMockQrAuthService,
   parseQrDemo,
 } from "@/services/qr-auth.service"
@@ -29,7 +30,18 @@ export function LoginView() {
   const method: LoginMethod =
     searchParams.get("method") === "qr" ? "qr" : "password"
   const qrDemo = parseQrDemo(searchParams.get("qrDemo"))
-  const qrService = React.useMemo(() => createMockQrAuthService(qrDemo), [qrDemo])
+
+  /* `?qrDemo=` chạy bản giả để xem trước từng trạng thái Figma; còn lại là thật */
+  const qrService = React.useMemo(
+    () => (qrDemo ? createMockQrAuthService(qrDemo) : createHttpQrAuthService()),
+    [qrDemo]
+  )
+
+  /* Ô "Ghi nhớ đăng nhập" dưới mã QR — đẩy vào dịch vụ, không tạo lại nó */
+  const [remember, setRemember] = React.useState(false)
+  React.useEffect(() => {
+    qrService.setRemember?.(remember)
+  }, [qrService, remember])
 
   const setMethod = (value: LoginMethod) => {
     const params = new URLSearchParams(searchParams)
@@ -55,7 +67,12 @@ export function LoginView() {
   if (method === "qr") {
     return (
       <AuthCard {...header}>
-        <QrLoginPanel service={qrService} nextPath={nextPath} />
+        <QrLoginPanel
+          service={qrService}
+          nextPath={nextPath}
+          remember={remember}
+          onRememberChange={setRemember}
+        />
       </AuthCard>
     )
   }

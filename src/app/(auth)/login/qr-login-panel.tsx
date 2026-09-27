@@ -7,6 +7,7 @@ import * as React from "react"
 
 import { StatusIcon } from "@/components/auth/status-icon"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { formatMMSS, useCountdown } from "@/hooks/use-countdown"
 import type {
   QrAuthService,
@@ -17,9 +18,17 @@ import type {
 type QrLoginPanelProps = {
   service: QrAuthService
   nextPath: string
+  /** Ô "Ghi nhớ đăng nhập" — giá trị được đọc lúc nhận phiên, xem `createHttpQrAuthService` */
+  remember: boolean
+  onRememberChange: (value: boolean) => void
 }
 
-export function QrLoginPanel({ service, nextPath }: QrLoginPanelProps) {
+export function QrLoginPanel({
+  service,
+  nextPath,
+  remember,
+  onRememberChange,
+}: QrLoginPanelProps) {
   const router = useRouter()
   const [session, setSession] = React.useState<QrSession | null>(null)
   const [status, setStatus] = React.useState<QrStatus>("pending")
@@ -27,10 +36,16 @@ export function QrLoginPanel({ service, nextPath }: QrLoginPanelProps) {
   const { start } = countdown
 
   const createSession = React.useCallback(async () => {
-    const next = await service.createSession()
-    setSession(next)
-    setStatus("pending")
-    start(Math.ceil((next.expiresAt - Date.now()) / 1000))
+    try {
+      const next = await service.createSession()
+      setSession(next)
+      setStatus("pending")
+      start(Math.ceil((next.expiresAt - Date.now()) / 1000))
+    } catch {
+      /* Mất mạng / máy chủ lỗi: về trạng thái hết hạn để có nút "Tạo mã mới",
+         thay vì treo một khung trống không có gì để bấm. */
+      setStatus("expired")
+    }
   }, [service, start])
 
   React.useEffect(() => {
@@ -132,6 +147,7 @@ export function QrLoginPanel({ service, nextPath }: QrLoginPanelProps) {
           >
             Mã hết hạn sau {formatMMSS(countdown.remaining)}
           </p>
+          <RememberBox checked={remember} onChange={onRememberChange} />
         </>
       )}
 
@@ -144,6 +160,7 @@ export function QrLoginPanel({ service, nextPath }: QrLoginPanelProps) {
           <p className="text-[13px] leading-5 font-medium text-muted-foreground">
             Đang chờ xác nhận…
           </p>
+          <RememberBox checked={remember} onChange={onRememberChange} />
         </>
       )}
 
@@ -154,6 +171,29 @@ export function QrLoginPanel({ service, nextPath }: QrLoginPanelProps) {
         />
       )}
     </div>
+  )
+}
+
+/**
+ * Cùng kiểu với ô "Ghi nhớ đăng nhập" của tab Mật khẩu. Hiện cả khi đang chờ
+ * quét lẫn khi đã quét: giá trị chỉ được đọc lúc nhận phiên, nên đổi ý sau khi
+ * quét, trước khi bấm xác nhận trên điện thoại, vẫn còn kịp.
+ */
+function RememberBox({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-[9px] text-[13.5px] leading-5 text-muted-foreground">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={(value) => onChange(value === true)}
+      />
+      Ghi nhớ đăng nhập
+    </label>
   )
 }
 
