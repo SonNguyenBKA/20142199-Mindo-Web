@@ -10,6 +10,7 @@ import {
   clearSessionCookies,
   isAccessTokenValid,
   refreshSession,
+  rememberFromCookie,
   setSessionCookies,
 } from "@/lib/server/session"
 import type { TokenPair } from "@/types/auth"
@@ -81,7 +82,11 @@ export async function forwardWithSession(
   }
   const out = new NextResponse(res.body, { status: res.status, headers })
   if (rotated) {
-    setSessionCookies(out, rotated, request.cookies.get(REMEMBER_COOKIE)?.value === "1")
+    setSessionCookies(
+      out,
+      rotated,
+      rememberFromCookie(request.cookies.get(REMEMBER_COOKIE)?.value)
+    )
   }
   return out
 }
