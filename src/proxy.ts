@@ -7,6 +7,7 @@ import {
   clearSessionCookies,
   isAccessTokenValid,
   refreshSession,
+  rememberFromCookie,
   setSessionCookies,
 } from "@/lib/server/session"
 import { APP_PATHS, AUTH_PATHS, HOME_PATH } from "@/lib/routes"
@@ -50,7 +51,7 @@ export async function proxy(request: NextRequest) {
   setSessionCookies(
     res,
     tokens,
-    request.cookies.get(REMEMBER_COOKIE)?.value === "1"
+    rememberFromCookie(request.cookies.get(REMEMBER_COOKIE)?.value)
   )
   return res
 }

@@ -6,10 +6,20 @@ import type { TokenPair } from "@/types/auth"
 
 export const ACCESS_COOKIE = "mindo_at"
 export const REFRESH_COOKIE = "mindo_rt"
-/** "1" when the user ticked "Ghi nhớ đăng nhập" – keeps refresh cookie persistent across rotations. */
+/**
+ * "Ghi nhớ đăng nhập": the absolute deadline (epoch seconds) until which the
+ * browser stays signed in, or "0" when the box was not ticked (session cookies
+ * that die with the browser).
+ *
+ * A deadline rather than a flag because the session cookies are re-set on
+ * every token rotation (every ~15 min of use). A plain `maxAge` would restart
+ * the clock each time and keep an active browser signed in forever; the
+ * deadline makes 7 days a hard cap counted from sign-in.
+ */
 export const REMEMBER_COOKIE = "mindo_rm"
 
-const REFRESH_MAX_AGE = 60 * 60 * 24 * 30 // 30d, matches JWT_REFRESH_TTL
+/** Remember me keeps the browser signed in for at most 7 days from sign-in. */
+const REMEMBER_MAX_AGE = 60 * 60 * 24 * 7
 const DEFAULT_ACCESS_MAX_AGE = 60 * 15 // 15m, matches JWT_ACCESS_TTL
 
 export const API_URL = (process.env.API_URL ?? "http://localhost:4000/api/v1").replace(
@@ -44,15 +54,43 @@ export function isAccessTokenValid(token: string | undefined) {
   return !!exp && exp * 1000 > Date.now() + 10_000
 }
 
+/**
+ * What a token rotation should keep: the deadline stored at sign-in, or
+ * `false` when the user did not tick remember me.
+ */
+export function rememberFromCookie(value: string | undefined): number | false {
+  const deadline = Number(value)
+  if (Number.isFinite(deadline) && deadline > 1) return deadline
+  // "1" was the old flag format: start a fresh 7-day window once, after which
+  // the cookie holds a deadline and stops sliding.
+  if (value === "1") return nowSeconds() + REMEMBER_MAX_AGE
+  return false
+}
+
+function nowSeconds() {
+  return Math.floor(Date.now() / 1000)
+}
+
+/**
+ * @param remember `true` at sign-in (starts the 7-day window), a deadline from
+ *   `rememberFromCookie` on rotation, or `false` for browser-session cookies.
+ */
 export function setSessionCookies(
   res: NextResponse,
   tokens: Pick<TokenPair, "access_token" | "refresh_token">,
-  remember: boolean
+  remember: boolean | number
 ) {
+  const now = nowSeconds()
+  const deadline =
+    remember === true ? now + REMEMBER_MAX_AGE : remember || undefined
+  const rememberMaxAge =
+    deadline === undefined ? undefined : Math.max(0, deadline - now)
+
   const exp = getJwtExp(tokens.access_token)
-  const accessMaxAge = exp
-    ? Math.max(0, exp - Math.floor(Date.now() / 1000))
-    : DEFAULT_ACCESS_MAX_AGE
+  const accessMaxAge = Math.min(
+    exp ? Math.max(0, exp - now) : DEFAULT_ACCESS_MAX_AGE,
+    rememberMaxAge ?? Infinity
+  )
 
   res.cookies.set(ACCESS_COOKIE, tokens.access_token, {
     ...baseCookie,
@@ -60,11 +98,11 @@ export function setSessionCookies(
   })
   res.cookies.set(REFRESH_COOKIE, tokens.refresh_token, {
     ...baseCookie,
-    ...(remember && { maxAge: REFRESH_MAX_AGE }),
+    ...(rememberMaxAge !== undefined && { maxAge: rememberMaxAge }),
   })
-  res.cookies.set(REMEMBER_COOKIE, remember ? "1" : "0", {
+  res.cookies.set(REMEMBER_COOKIE, deadline ? String(deadline) : "0", {
     ...baseCookie,
-    ...(remember && { maxAge: REFRESH_MAX_AGE }),
+    ...(rememberMaxAge !== undefined && { maxAge: rememberMaxAge }),
   })
 }
 

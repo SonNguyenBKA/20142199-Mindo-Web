@@ -5,6 +5,7 @@ import {
   REMEMBER_COOKIE,
   clearSessionCookies,
   refreshSession,
+  rememberFromCookie,
   setSessionCookies,
 } from "@/lib/server/session"
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
   setSessionCookies(
     res,
     tokens,
-    request.cookies.get(REMEMBER_COOKIE)?.value === "1"
+    rememberFromCookie(request.cookies.get(REMEMBER_COOKIE)?.value)
   )
   return res
 }
