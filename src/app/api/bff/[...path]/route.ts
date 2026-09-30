@@ -30,7 +30,9 @@ const ALLOWED: Record<ForwardMethod, RegExp[]> = {
     "invest/calculate-price",
     "invest/snapshot-price",
     "invest",
-    "agency/applications"
+    "agency/applications",
+    "deposits",
+    `deposits/${ID}/cancel`
   ),
   PATCH: rules("account/profile", "account/settings"),
   DELETE: rules("account/sessions", `account/sessions/${ID}`),

@@ -10,6 +10,7 @@ export const STATUS_OPTIONS: { value: DepositStatus; label: string }[] = [
   { value: "completed", label: "Thành công" },
   { value: "pending", label: "Đang xử lý" },
   { value: "failed", label: "Thất bại" },
+  { value: "cancelled", label: "Đã huỷ" },
 ]
 
 export const statusLabel = (status: DepositStatus) =>
@@ -20,6 +21,7 @@ export const statusSoftBg: Record<DepositStatus, string> = {
   completed: "bg-success-soft",
   pending: "bg-warning-soft",
   failed: "bg-destructive-soft",
+  cancelled: "bg-surface-strong",
 }
 
 /** Text/icon colour per status on white backgrounds. */
@@ -27,6 +29,7 @@ export const statusText: Record<DepositStatus, string> = {
   completed: "text-success-foreground",
   pending: "text-warning-foreground",
   failed: "text-destructive",
+  cancelled: "text-muted-foreground",
 }
 
 export const PENDING_HINT =

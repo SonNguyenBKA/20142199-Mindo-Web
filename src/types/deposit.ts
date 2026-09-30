@@ -1,6 +1,6 @@
 // Shapes returned by Mindo-API `/investor/history/deposits*` (api/src/history/history.service.ts).
 
-export type DepositStatus = "completed" | "pending" | "failed"
+export type DepositStatus = "completed" | "pending" | "failed" | "cancelled"
 
 export type DepositSource = { value: string; label: string }
 
