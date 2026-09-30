@@ -1,27 +1,21 @@
 "use client"
 
-import { cn } from "cn"
 import { CheckIcon, ChevronLeftIcon, XIcon } from "lucide-react"
 
 import { HeaderIconButton } from "@/components/app/mobile-header"
-import { COMMISSION_TYPE, ratePercent } from "@/components/peer/agency/commission-utils"
+import { COMMISSION_TYPE, usdOf } from "@/components/peer/agency/commission-utils"
 import { SummaryRow } from "@/components/peer/peer-shared"
 import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet"
-import { formatDateTime, formatVnd, initials } from "@/lib/format"
-import type { ReferralCommission } from "@/types/peer"
-
-const STATUS = {
-  EARNED: { label: "Đã cộng vào ví", className: "bg-card text-success-foreground" },
-  PAID: { label: "Đã chi trả", className: "bg-card text-success-foreground" },
-  CANCELLED: { label: "Đã huỷ", className: "bg-destructive-soft text-destructive" },
-}
+import { tierByCode } from "@/lib/agency-tier"
+import { formatDateTime, formatUsd, formatVnd, initials } from "@/lib/format"
+import type { Commission } from "@/types/peer"
 
 /** Right drawer on desktop, full-screen sheet on mobile (Figma "Chi tiết hoa hồng"). */
 export function CommissionDetailSheet({
   row,
   onOpenChange,
 }: {
-  row: ReferralCommission | null
+  row: Commission | null
   onOpenChange: (open: boolean) => void
 }) {
   return (
@@ -51,9 +45,11 @@ export function CommissionDetailSheet({
   )
 }
 
-function DetailBody({ row }: { row: ReferralCommission }) {
-  const status = STATUS[row.status]
-  const rate = ratePercent(row.rate)
+function DetailBody({ row }: { row: Commission }) {
+  const rate = `${row.rate_percent}%`
+  const usd = (vnd: string) => formatUsd(usdOf(vnd, row.usd_vnd_rate))
+  const tier = tierByCode(row.order.agency_title)
+  const discount = Number(row.order.discount_vnd)
   return (
     <div className="flex flex-col gap-5 px-6 pt-2 pb-8 lg:px-8 lg:pt-6">
       <div className="rounded-block border border-referral-border bg-linear-140 from-referral-from to-referral-to px-4 py-4">
@@ -61,55 +57,59 @@ function DetailBody({ row }: { row: ReferralCommission }) {
           <span className="text-[12.5px] text-muted-foreground">
             {COMMISSION_TYPE[row.type]} {rate}
           </span>
-          <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", status.className)}>
-            {row.status !== "CANCELLED" && <CheckIcon className="size-3" strokeWidth={2.4} />}
-            {status.label}
+          <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold text-success-foreground">
+            <CheckIcon className="size-3" strokeWidth={2.4} />
+            Đã cộng vào ví
           </span>
         </div>
-        <p
-          className={cn(
-            "mt-1 text-[28px] leading-9 font-bold",
-            row.status === "CANCELLED" ? "text-placeholder line-through" : "text-success-strong"
-          )}
-        >
-          {formatVnd(row.amountVnd, "+")}
+        <p className="mt-1 text-[28px] leading-9 font-bold text-success-strong">{formatUsd(row.amount_usd, "+")}</p>
+        <p className="text-xs text-muted-foreground">
+          ≈ {formatVnd(row.amount_vnd)} · {formatDateTime(row.credited_at)}
         </p>
-        <p className="text-xs text-muted-foreground">{formatDateTime(row.createdAt)}</p>
       </div>
 
       <div className="flex items-center gap-3 rounded-block bg-muted px-4 py-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-initials text-[13px] font-bold text-brand-deep">
-          {initials(row.buyer.fullName)}
+          {initials(row.buyer.full_name)}
         </span>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-semibold text-foreground">{row.buyer.fullName}</span>
+          <span className="truncate text-sm font-semibold text-foreground">{row.buyer.full_name}</span>
           <span className="truncate text-xs text-muted-foreground">{row.buyer.email}</span>
         </div>
       </div>
 
       <section className="flex flex-col gap-2.5">
         <h3 className="text-sm font-semibold text-foreground">Đơn gốc</h3>
-        <SummaryRow label="Mã đơn">TX#{row.order.id.slice(-8).toUpperCase()}</SummaryRow>
-        <SummaryRow label="Sản phẩm">{row.order.product.name}</SummaryRow>
-        <SummaryRow label="Giá trị đơn" valueClassName="font-semibold">
-          {formatVnd(row.order.totalVnd)}
+        <SummaryRow label="Mã đơn">{row.order.transaction_code}</SummaryRow>
+        <SummaryRow label="Sản phẩm">
+          {row.order.quantity} × {row.order.product.name}
         </SummaryRow>
-        <SummaryRow label="Thời gian đơn">{formatDateTime(row.order.createdAt)}</SummaryRow>
+        {tier && <SummaryRow label="Cấp đại lý của đơn">{tier.name}</SummaryRow>}
+        {discount > 0 && (
+          <SummaryRow
+            label={`Chiết khấu (−${Number(row.order.discount_percent).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%)`}
+          >
+            − {usd(row.order.discount_vnd)}
+          </SummaryRow>
+        )}
+        <SummaryRow label="Giá trị đơn" valueClassName="font-semibold">
+          {usd(row.order.net_amount_vnd)}
+        </SummaryRow>
       </section>
 
       <div className="rounded-block bg-info-soft px-4 py-3">
         <p className="text-[10.5px] font-semibold tracking-[0.6px] text-referral-label">CÁCH TÍNH</p>
         <p className="mt-1 text-[15px] font-bold text-foreground">
-          {formatVnd(row.order.totalVnd)} × {rate} = {formatVnd(row.amountVnd)}
+          {usd(row.order.net_amount_vnd)} × {rate} = {formatUsd(row.amount_usd)}
         </p>
-        <p className="mt-0.5 text-[11.5px] text-muted-foreground">Hoa hồng = {rate} giá trị đơn</p>
+        <p className="mt-0.5 text-[11.5px] text-muted-foreground">Hoa hồng = {rate} giá trị đơn sau chiết khấu</p>
       </div>
 
       <section className="flex flex-col gap-2.5">
         <h3 className="text-sm font-semibold text-foreground">Ghi nhận</h3>
-        <SummaryRow label="Thời gian ghi nhận">{formatDateTime(row.createdAt)}</SummaryRow>
-        <SummaryRow label="Số tiền vào ví">{row.status === "CANCELLED" ? "—" : formatVnd(row.amountVnd)}</SummaryRow>
-        {row.paidAt && <SummaryRow label="Thời gian chi trả">{formatDateTime(row.paidAt)}</SummaryRow>}
+        <SummaryRow label="Thời gian ghi nhận">{formatDateTime(row.credited_at)}</SummaryRow>
+        <SummaryRow label="Số tiền vào ví">{formatVnd(row.amount_vnd)}</SummaryRow>
+        <SummaryRow label="Tỷ giá">1 USD = {formatVnd(row.usd_vnd_rate)}</SummaryRow>
       </section>
     </div>
   )

@@ -1,5 +1,6 @@
 "use client"
 
+import { cn } from "cn"
 import { InfoIcon, ReceiptTextIcon, RotateCwIcon } from "lucide-react"
 import * as React from "react"
 
@@ -14,27 +15,61 @@ import {
   CommissionSummaryHero,
   DownlineCard,
 } from "@/components/peer/agency/commission-summary"
-import { monthKey, monthsOf, sumVnd } from "@/components/peer/agency/commission-utils"
+import { isForbidden, monthRange, monthSpan, recentMonths } from "@/components/peer/agency/commission-utils"
 import { ALL_PERIODS, PeriodSelect, periodLabel } from "@/components/peer/agency/period-select"
+import { useBranchSales, useCommissions } from "@/components/peer/agency/use-referrals"
 import { PeerToolbar, ToolbarPill } from "@/components/peer/peer-shared"
 import { Button } from "@/components/ui/button"
+import { Pagination } from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatVnd } from "@/lib/format"
-import type { ReferralCommission } from "@/types/peer"
+import { formatUsd } from "@/lib/format"
+import type { Commission } from "@/types/peer"
+
+type TypeFilter = "DIRECT" | "BRANCH" | undefined
+
+const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
+  { value: undefined, label: "Tất cả" },
+  { value: "DIRECT", label: "Trực tiếp" },
+  { value: "BRANCH", label: "Đầu nhánh" },
+]
+
+const ALL_TIME = {}
 
 export function AgencyTab({ tabs }: { tabs: React.ReactNode }) {
   const referrals = useReferralDashboard()
   const data = referrals.data
-  const rows = React.useMemo(() => data?.recent_commissions ?? [], [data])
-  const months = React.useMemo(() => monthsOf(rows), [rows])
-  const [picked, setPicked] = React.useState<string | null>(null)
-  // Default to the newest month with data, or the current month when there is none.
-  const period = picked ?? months[0] ?? monthKey(new Date().toISOString())
-  const [selected, setSelected] = React.useState<ReferralCommission | null>(null)
+  const months = React.useMemo(() => recentMonths(12), [])
+  const [period, setPeriod] = React.useState(months[0])
+  const [type, setType] = React.useState<TypeFilter>(undefined)
+  const [page, setPage] = React.useState(1)
+  const [branchPage, setBranchPage] = React.useState(1)
+  const [selected, setSelected] = React.useState<Commission | null>(null)
 
-  const visible = period === ALL_PERIODS ? rows : rows.filter((r) => monthKey(r.createdAt) === period)
-  const periodVnd = sumVnd(visible)
+  const range = React.useMemo(() => (period === ALL_PERIODS ? ALL_TIME : monthRange(period)), [period])
+  const commissions = useCommissions(range, type, page)
+  const allTime = useCommissions(ALL_TIME, undefined, 1)
+  const isRoot = !!data?.is_branch_root
+  const branch = useBranchSales(range, branchPage, isRoot)
+
+  const changePeriod = (value: string) => {
+    setPeriod(value)
+    setPage(1)
+    setBranchPage(1)
+  }
+
   const label = periodLabel(period)
+  const rows = commissions.data?.data.items ?? []
+  const extra = commissions.data?.extra
+  const summary = commissions.data?.data.summary
+  const rate = data?.settings.direct_rate_percent ?? 10
+  const summaryProps = {
+    totalUsd: allTime.data?.data.summary.total_commission_usd,
+    totalVnd: allTime.data?.data.summary.total_commission_vnd,
+    periodLabel: label,
+    periodUsd: summary?.total_commission_usd,
+    directReferrals: data?.direct_referrals ?? 0,
+    ratePercent: rate,
+  }
 
   return (
     <>
@@ -43,7 +78,7 @@ export function AgencyTab({ tabs }: { tabs: React.ReactNode }) {
           <ToolbarPill className="hidden lg:flex">
             <InfoIcon className="size-3.5 text-muted-foreground" strokeWidth={1.8} />
             <span className="text-muted-foreground">Hoa hồng giới thiệu</span>
-            <b className="font-bold text-foreground lg:text-sm">{data.settings.direct_rate_percent}% giá trị đơn</b>
+            <b className="font-bold text-foreground lg:text-sm">{rate}% giá thực trả</b>
           </ToolbarPill>
         )}
       </PeerToolbar>
@@ -68,8 +103,32 @@ export function AgencyTab({ tabs }: { tabs: React.ReactNode }) {
         <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-6">
           <div className="flex flex-col gap-4 lg:gap-6">
             <AgencyCtaCard />
-            {data.is_branch_root && <DownlineCard data={data} />}
-            <CommissionSummaryHero data={data} periodLabel={label} periodVnd={periodVnd} />
+            {isRoot && branch.data && (
+              <DownlineCard
+                data={branch.data.data}
+                extra={branch.data.extra}
+                months={months}
+                period={period}
+                onPeriodChange={changePeriod}
+                span={period === ALL_PERIODS ? "Toàn thời gian" : monthSpan(period)}
+                page={branchPage}
+                onPageChange={setBranchPage}
+              />
+            )}
+            {isRoot && branch.isError && !isForbidden(branch.error) && (
+              <EmptyState
+                tone="danger"
+                icon={<RotateCwIcon strokeWidth={1.8} />}
+                title="Không tải được doanh số tuyến dưới"
+                action={
+                  <Button size="action" onClick={() => branch.refetch()}>
+                    Thử lại
+                  </Button>
+                }
+                className="rounded-block border border-border bg-card"
+              />
+            )}
+            <CommissionSummaryHero {...summaryProps} />
             <div className="lg:hidden">
               <ReferralCard />
             </div>
@@ -79,13 +138,52 @@ export function AgencyTab({ tabs }: { tabs: React.ReactNode }) {
                 <div className="flex flex-col gap-0.5">
                   <h2 className="text-[15px] font-semibold text-foreground lg:text-lg">Lịch sử hoa hồng</h2>
                   <p className="hidden text-[13px] text-muted-foreground lg:block">
-                    Khi người bạn giới thiệu sở hữu Peer · 20 giao dịch gần nhất
+                    Khi người bạn giới thiệu sở hữu Peer
                   </p>
                 </div>
-                {months.length > 0 && <PeriodSelect months={months} value={period} onChange={setPicked} />}
+                <PeriodSelect months={months} value={period} onChange={changePeriod} />
               </div>
 
-              {visible.length === 0 ? (
+              {isRoot && (
+                <div role="radiogroup" aria-label="Loại hoa hồng" className="flex gap-2">
+                  {TYPE_OPTIONS.map((o) => (
+                    <button
+                      key={o.label}
+                      type="button"
+                      role="radio"
+                      aria-checked={type === o.value}
+                      onClick={() => {
+                        setType(o.value)
+                        setPage(1)
+                      }}
+                      className={cn(
+                        "h-8 rounded-full px-3.5 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/30",
+                        type === o.value
+                          ? "bg-primary font-semibold text-primary-foreground"
+                          : "border border-border bg-card font-medium text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {commissions.isPending ? (
+                <Skeleton className="h-60 rounded-block" />
+              ) : commissions.isError ? (
+                <EmptyState
+                  tone="danger"
+                  icon={<RotateCwIcon strokeWidth={1.8} />}
+                  title="Không tải được lịch sử hoa hồng"
+                  action={
+                    <Button size="action" onClick={() => commissions.refetch()}>
+                      Thử lại
+                    </Button>
+                  }
+                  className="rounded-block border border-border bg-card lg:border-0"
+                />
+              ) : rows.length === 0 ? (
                 <EmptyState
                   icon={<ReceiptTextIcon strokeWidth={1.6} />}
                   title="Chưa có hoa hồng"
@@ -94,14 +192,18 @@ export function AgencyTab({ tabs }: { tabs: React.ReactNode }) {
                 />
               ) : (
                 <div className="flex flex-col rounded-block border border-border bg-card px-4 pt-1 pb-3 lg:border-0 lg:p-0">
-                  <CommissionTable rows={visible} onSelect={setSelected} />
-                  <CommissionListMobile rows={visible} onSelect={setSelected} />
+                  <CommissionTable rows={rows} ratePercent={rate} onSelect={setSelected} />
+                  <CommissionListMobile rows={rows} onSelect={setSelected} />
+                  {extra && extra.last_page > 1 && (
+                    <Pagination page={page} lastPage={extra.last_page} onPageChange={setPage} className="mt-3 justify-center" />
+                  )}
                   <div className="mt-1 flex items-center justify-between rounded-tile bg-info-soft px-3 py-2.5 lg:mt-3 lg:px-4 lg:py-3">
                     <span className="text-[12.5px] font-medium text-referral-label lg:text-[13px]">
-                      Tổng {period === ALL_PERIODS ? `${visible.length} giao dịch` : label.toLowerCase()}
+                      Hiển thị {rows.length} / {summary?.transaction_count ?? rows.length} giao dịch ·{" "}
+                      {label.toLowerCase()}
                     </span>
                     <span className="text-sm font-bold text-success-strong lg:text-[15px]">
-                      {formatVnd(periodVnd, periodVnd > 0 ? "+" : undefined)}
+                      {formatUsd(summary?.total_commission_usd, "+")}
                     </span>
                   </div>
                 </div>
@@ -111,7 +213,7 @@ export function AgencyTab({ tabs }: { tabs: React.ReactNode }) {
 
           <div className="hidden flex-col gap-6 lg:flex">
             <ReferralCard />
-            <CommissionSummaryCard data={data} periodLabel={label} periodVnd={periodVnd} />
+            <CommissionSummaryCard {...summaryProps} />
           </div>
         </div>
       )}
