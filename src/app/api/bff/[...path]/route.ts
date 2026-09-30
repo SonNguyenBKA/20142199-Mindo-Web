@@ -22,7 +22,10 @@ const ALLOWED: Record<ForwardMethod, RegExp[]> = {
     `history/deposits/${ID}`,
     `history/deposits/${ID}/receipt`,
     `history/nfts/${ID}`,
-    "invest/config"
+    "invest/config",
+    "referrals/commissions",
+    `referrals/commissions/${ID}`,
+    "referrals/branch-sales"
   ),
   POST: rules(
     "auth/update-password",

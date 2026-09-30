@@ -145,3 +145,64 @@ export type ReferralCommission = {
   buyer: { id: string; fullName: string; email: string }
   order: { id: string; totalVnd: string; createdAt: string; product: { name: string } }
 }
+
+/** `GET /investor/referrals/commissions` item (and `/:id`). */
+export type Commission = {
+  id: string
+  type: "direct" | "branch"
+  rate_percent: string
+  amount_vnd: string
+  amount_usd: string
+  usd_vnd_rate: string
+  status: string
+  buyer: { id: string; full_name: string; email: string; referral_code: string }
+  order: {
+    id: string
+    transaction_code: string
+    product: { id: string; name: string; symbol: string }
+    quantity: number
+    gross_amount_vnd: string
+    discount_vnd: string
+    net_amount_vnd: string
+    discount_percent: string
+    agency_title: "TIER_1" | "TIER_2" | "TIER_3" | null
+  }
+  calculation: string
+  credited_at: string
+}
+
+export type CommissionPage = {
+  summary: {
+    total_commission_vnd: string
+    total_commission_usd: string
+    usd_vnd_rate: string
+    transaction_count: number
+  }
+  items: Commission[]
+}
+
+/** `GET /investor/referrals/branch-sales` — branch roots only (403 otherwise). */
+export type BranchSales = {
+  system_code: { code: string; label: string | null; claimedAt: string }
+  period: { from: string | null; to: string | null }
+  metrics: {
+    downline_count: number
+    order_count: number
+    total_peer: number
+    total_sales_vnd: string
+    total_sales_usd: string
+    branch_reward_vnd: string
+    branch_reward_usd: string
+    usd_vnd_rate: string
+  }
+  orders: {
+    id: string
+    transaction_code: string
+    buyer: { id: string; full_name: string; email: string }
+    product: { id: string; name: string; symbol: string }
+    quantity: number
+    amount_vnd: string
+    amount_usd: string
+    occurred_at: string
+  }[]
+}
