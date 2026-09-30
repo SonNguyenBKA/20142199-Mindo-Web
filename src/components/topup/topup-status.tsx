@@ -111,7 +111,7 @@ export function ExpiredStatus({
         </StatusRing>
       }
       title="Mã QR đã hết hạn"
-      description="Mã chỉ có hiệu lực 15 phút. Nếu bạn đã chuyển khoản, giao dịch vẫn được đối soát bình thường."
+      description={`Mã chỉ có hiệu lực ${Math.round(order.ttlSeconds / 60)} phút. Nếu bạn đã chuyển khoản, giao dịch vẫn được đối soát bình thường.`}
       actions={
         <>
           <Button size="xl" loading={renewing} onClick={onRenew}>

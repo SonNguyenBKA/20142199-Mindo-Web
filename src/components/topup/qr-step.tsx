@@ -8,7 +8,7 @@ import { Panel } from "@/components/topup/topup-shared"
 import { Button } from "@/components/ui/button"
 import { formatMMSS } from "@/hooks/use-countdown"
 import { formatVnd } from "@/lib/format"
-import { QR_TTL_SECONDS, type TopupOrder } from "@/services/topup.service"
+import type { TopupOrder } from "@/services/topup.service"
 
 type QrStepProps = {
   order: TopupOrder
@@ -20,7 +20,7 @@ type QrStepProps = {
 }
 
 export function QrStep({ order, remaining, onTransferred, onCancel, cancelling, confirming }: QrStepProps) {
-  const progress = Math.max(0, Math.min(1, remaining / QR_TTL_SECONDS))
+  const progress = Math.max(0, Math.min(1, remaining / order.ttlSeconds))
   const rows = [
     { label: "Ngân hàng", value: order.bankName },
     { label: "Số tài khoản", value: order.accountNumber, copy: order.accountNumber.replace(/\s/g, "") },

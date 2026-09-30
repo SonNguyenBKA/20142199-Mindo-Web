@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "cn"
-import { CheckIcon, ChevronLeftIcon, ClockIcon, WifiIcon, XIcon } from "lucide-react"
+import { BanIcon, CheckIcon, ChevronLeftIcon, ClockIcon, WifiIcon, XIcon } from "lucide-react"
 import * as React from "react"
 import { toast } from "sonner"
 
@@ -58,6 +58,7 @@ const STATUS_ICON: Record<DepositStatus, React.ReactNode> = {
   completed: <CheckIcon strokeWidth={2.5} />,
   pending: <ClockIcon strokeWidth={2.2} />,
   failed: <XIcon strokeWidth={2.5} />,
+  cancelled: <BanIcon strokeWidth={2.2} />,
 }
 
 const contactSupport = () =>

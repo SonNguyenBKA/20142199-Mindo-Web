@@ -17,7 +17,11 @@ import {
 } from "@/components/topup/topup-status"
 import { useCountdown } from "@/hooks/use-countdown"
 import { getErrorMessage } from "@/lib/auth-errors"
-import { createMockTopupService, type TopupOrder } from "@/services/topup.service"
+import {
+  createMockTopupService,
+  createVietQrTopupService,
+  type TopupOrder,
+} from "@/services/topup.service"
 
 type Step = "amount" | "qr" | "pending" | "expired"
 
@@ -26,11 +30,17 @@ export function TopupView() {
   const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const { user } = useSession()
-  const demo = searchParams.get("demo")
+  // `?demo=` keeps the offline mock for design reviews; never in production.
+  const demo = process.env.NODE_ENV === "production" ? null : searchParams.get("demo")
   const service = React.useMemo(
-    () => createMockTopupService({ demo, balance: Number(user.balance_vnd) || 0 }),
+    () =>
+      demo
+        ? createMockTopupService({ demo, balance: Number(user.balance_vnd) || 0 })
+        : createVietQrTopupService(),
     [demo, user.balance_vnd]
   )
+  // One Idempotency-Key per "Tiếp tục": a double click or a retry after a timeout reuses it.
+  const pendingKey = React.useRef<string | null>(null)
 
   const [step, setStep] = React.useState<Step>("amount")
   const [amount, setAmount] = React.useState<number | undefined>(2_000_000)
@@ -44,11 +54,13 @@ export function TopupView() {
   const create = async (value: number) => {
     setCreating(true)
     setCreateError(null)
+    pendingKey.current ??= crypto.randomUUID()
     try {
-      const next = await service.create(value)
+      const next = await service.create(value, pendingKey.current)
+      pendingKey.current = null
       setAmount(value)
       setOrder(next)
-      start(Math.ceil((next.expiresAt - Date.now()) / 1000))
+      start(Math.max(0, Math.ceil((next.expiresAt - Date.now()) / 1000)))
       setStep("qr")
     } catch (err) {
       setCreateError(getErrorMessage(err))
@@ -63,9 +75,12 @@ export function TopupView() {
     queryKey: ["topup-status", order?.id],
     queryFn: () => service.getStatus(order as TopupOrder),
     enabled: polling,
-    refetchInterval: polling ? 3000 : false,
+    // Stop once the deposit is cancelled (here or from another device).
+    refetchInterval: (q) => (polling && q.state.data?.status !== "cancelled" ? 3000 : false),
   })
-  const result = status.data?.status === "pending" ? undefined : status.data
+  const cancelledElsewhere = status.data?.status === "cancelled"
+  const result =
+    status.data?.status === "pending" || status.data?.status === "cancelled" ? undefined : status.data
 
   // Settled → refresh balance (server layout) and the history list.
   React.useEffect(() => {
@@ -76,7 +91,9 @@ export function TopupView() {
 
   // QR window elapsed without payment.
   const qrExpired = step === "qr" && !!order && countdown.done && !result
-  const view: Step | "success" | "failed" = result
+  const view: Step | "success" | "failed" = cancelledElsewhere
+    ? "amount"
+    : result
     ? result.status === "completed"
       ? "success"
       : "failed"
@@ -93,10 +110,21 @@ export function TopupView() {
   const cancel = async () => {
     if (!order) return
     setBusy("cancel")
-    await service.cancel(order).catch(() => null)
+    const outcome = await service.cancel(order).catch((err) => {
+      toast.error(getErrorMessage(err))
+      return null
+    })
     setBusy(null)
-    toast.info("Đã huỷ giao dịch nạp tiền.")
-    reset()
+    if (outcome === "already-settled") {
+      // The money landed first; the next poll moves to the success screen.
+      toast.info("Tiền đã về, đang cập nhật số dư.")
+      setStep("pending")
+      return
+    }
+    if (outcome === "cancelled") {
+      toast.info("Đã huỷ giao dịch nạp tiền.")
+      reset()
+    }
   }
 
   const confirmTransferred = async () => {

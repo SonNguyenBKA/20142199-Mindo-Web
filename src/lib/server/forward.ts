@@ -40,6 +40,8 @@ export async function forwardWithSession(
   const raw = method === "GET" ? null : await request.arrayBuffer()
   const body = raw && raw.byteLength > 0 ? raw : undefined
   const contentType = request.headers.get("content-type")
+  // Lets the BE collapse a double submit (e.g. creating a deposit) into one request.
+  const idempotencyKey = request.headers.get("idempotency-key")
   const call = (token: string | undefined) =>
     token
       ? fetch(url, {
@@ -49,6 +51,7 @@ export async function forwardWithSession(
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
             ...(body && contentType ? { "Content-Type": contentType } : {}),
+            ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
           },
           body,
         }).catch(() => null)
