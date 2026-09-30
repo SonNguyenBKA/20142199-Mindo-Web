@@ -50,3 +50,7 @@ export function tierProgress(totalPackages: number) {
     next: AGENCY_TIERS[index + 1] ?? null,
   }
 }
+
+/** Display data (name, medal, colour) for a BE tier code. */
+export const tierByCode = (code: AgencyTierCode | null | undefined) =>
+  AGENCY_TIERS.find((t) => t.code === code) ?? null

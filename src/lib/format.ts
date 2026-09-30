@@ -10,6 +10,16 @@ export function formatVnd(value: string | number | null | undefined, sign?: "+")
   return `${negative ? "-" : sign ?? ""}${grouped}đ`
 }
 
+const usdFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 })
+
+/** 760 → "760 USD", 17.5 → "17,5 USD" (Figma writes USD with a Vietnamese decimal comma). */
+export function formatUsd(value: string | number | null | undefined, sign?: "+" | "−") {
+  if (value === null || value === undefined || value === "") return "—"
+  const n = Number(value)
+  if (!Number.isFinite(n)) return "—"
+  return `${sign ? `${sign} ` : ""}${usdFormat.format(n)} USD`
+}
+
 const dateParts = (iso: string) => {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: VN_TZ,

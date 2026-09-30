@@ -1,7 +1,6 @@
 "use client"
 
 import { PeerTile } from "@/components/peer/peer-artwork"
-import { formatVnd } from "@/lib/format"
 import { remainingOf } from "@/lib/peer"
 import type { NftProduct } from "@/types/peer"
 
@@ -28,9 +27,10 @@ export function ProductGrid({
           >
             <PeerTile
               title={p.name}
-              subtitle={`${p.symbol} · Còn ${remaining.toLocaleString("vi-VN")}`}
-              label="Giá sở hữu"
-              value={formatVnd(p.unitPriceVnd)}
+              subtitle={p.symbol}
+              // Price is the same for every collection (25 USD × rate, tier discount) — show what differs.
+              label="Còn lại"
+              value={`${remaining.toLocaleString("vi-VN")} Peer`}
               muted={soldOut}
               badge={
                 soldOut && (

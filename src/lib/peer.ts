@@ -10,7 +10,4 @@ export const shortAssetCode = (assetCode: string) => {
 
 export const remainingOf = (p: NftProduct) => Math.max(0, p.totalSupply - p.soldCount)
 
-/** Order total in VND as the BE computes it (unit price × quantity). */
-export const totalVnd = (p: NftProduct, quantity: number) => Number(p.unitPriceVnd) * quantity
-
 export const txCode = (id: string) => `TX#${id.slice(-8).toUpperCase()}`
