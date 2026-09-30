@@ -21,9 +21,17 @@ const ALLOWED: Record<ForwardMethod, RegExp[]> = {
     "history/deposits",
     `history/deposits/${ID}`,
     `history/deposits/${ID}/receipt`,
-    `history/nfts/${ID}`
+    `history/nfts/${ID}`,
+    "invest/config"
   ),
-  POST: rules("auth/update-password", "files/upload", "invest/snapshot-price", "invest", "agency/applications"),
+  POST: rules(
+    "auth/update-password",
+    "files/upload",
+    "invest/calculate-price",
+    "invest/snapshot-price",
+    "invest",
+    "agency/applications"
+  ),
   PATCH: rules("account/profile", "account/settings"),
   DELETE: rules("account/sessions", `account/sessions/${ID}`),
 }

@@ -1,3 +1,5 @@
+import type { AgencyTierCode } from "@/lib/agency-tier"
+
 /** Shapes from Mindo-API Peer (NFT) endpoints — only the fields the UI reads. Raw Prisma rows are camelCase. */
 
 /** `GET /nfts` — a Peer collection on sale. */
@@ -13,15 +15,73 @@ export type NftProduct = {
   isActive: boolean
 }
 
-/** `POST /investor/invest/snapshot-price` */
-export type PriceSnapshot = {
+/** One discount tier as `GET /investor/invest/config` returns it. */
+export type TierRule = {
+  code: AgencyTierCode
+  title: string
+  from_package: number
+  to_package: number | null
+  discount_percent: number
+}
+
+/** `GET /investor/invest/config` — price, rate, tiers and the buyer's standing. */
+export type PurchaseConfig = {
+  product: { id: string; name: string; available_supply: number }
+  base_price_usd: string
+  usd_vnd_rate: string
+  unit_price_vnd: string
+  max_quantity_per_order: number
+  current_title: AgencyTierCode | null
+  total_packages_purchased: number
+  balance_vnd: string
+  kyc_verified: boolean
+  tiers: TierRule[]
+}
+
+/** A run of Peers priced at one tier's discount (BE `pricing_breakdown`). */
+export type PricingSegment = {
+  tier: AgencyTierCode
+  title: string
+  from_package: number
+  to_package: number
+  quantity: number
+  discount_rate: number
+  gross_amount_vnd: number
+  net_amount_vnd: number
+}
+
+/** `POST /investor/invest/calculate-price` — the server's price for this order. */
+export type PurchaseQuote = {
   amount: number
   nft_id: string
   price_nft: string
   total_vnd: string
-  price_snapshot: string
-  expires_in: number
+  gross_total_vnd: string
+  discount_vnd: string
+  discount_percent: number
+  gross_amount_usd: string
+  discount_amount_usd: string
+  net_amount_usd: string
+  unit_price_usd: string
+  usd_vnd_rate: string
+  agency_title: AgencyTierCode
+  agency_title_label: string
+  current_title: AgencyTierCode | null
+  total_packages_before: number
+  total_packages_after: number
+  pricing_breakdown: PricingSegment[]
+  balance_vnd: string
+  balance_after_vnd: string
+  shortage_vnd: string
+  can_purchase: boolean
+  kyc_verified: boolean
+  referral_code: string | null
+  referral_code_valid: boolean | null
+  referrer_name: string | null
 }
+
+/** `POST /investor/invest/snapshot-price` — the quote, signed and locked for 10 minutes. */
+export type PriceSnapshot = PurchaseQuote & { price_snapshot: string; expires_in: number }
 
 export type NftAsset = {
   id: string
@@ -40,9 +100,20 @@ export type PurchaseOrder = {
   quantity: number
   unitPriceVnd: string
   totalVnd: string
-  status: "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED"
   createdAt: string
   nftAssets: NftAsset[]
+  transaction_code: string
+  status: string
+  gross_total_vnd: string
+  discount_vnd: string
+  effective_discount_percent: string
+  total_vnd: string
+  agency_title: AgencyTierCode | null
+  referral_code: string | null
+  unit_price_usd: string | null
+  usd_vnd_rate: string | null
+  pricing_breakdown: PricingSegment[]
+  balance_after_vnd: string | null
 }
 
 /** `GET /investor/me/nfts` */
