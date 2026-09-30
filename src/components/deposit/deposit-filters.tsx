@@ -10,6 +10,15 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { formatDateInput } from "@/lib/format"
 import type { DepositHistoryFilters, DepositSource, DepositStatus } from "@/types/deposit"
 
+/** Wording for the "source" select — reused as "Bộ sưu tập" on the Peer history page. */
+export type FilterLabels = { source: string; sourcePlaceholder: string; sheetTitle: string }
+
+const DEPOSIT_LABELS: FilterLabels = {
+  source: "Nguồn nạp",
+  sourcePlaceholder: "Tất cả nguồn nạp",
+  sheetTitle: "Bộ lọc lịch sử nạp tiền",
+}
+
 type FiltersProps = {
   value: DepositHistoryFilters
   sources: DepositSource[]
@@ -17,6 +26,7 @@ type FiltersProps = {
   disabled?: boolean
   onApply: (filters: DepositHistoryFilters) => void
   onReset: () => void
+  labels?: FilterLabels
 }
 
 /** Draft copy of the applied filters; re-synced whenever the URL changes. */
@@ -186,7 +196,15 @@ const sourceOptions = (sources: DepositSource[]) =>
 
 // ---------- Desktop panel ----------
 
-export function DepositFilterPanel({ value, sources, active, disabled, onApply, onReset }: FiltersProps) {
+export function DepositFilterPanel({
+  value,
+  sources,
+  active,
+  disabled,
+  onApply,
+  onReset,
+  labels = DEPOSIT_LABELS,
+}: FiltersProps) {
   const { draft, set, invalidRange } = useDraft(value)
 
   return (
@@ -215,9 +233,9 @@ export function DepositFilterPanel({ value, sources, active, disabled, onApply, 
         <DateField id="filter-to" label="Đến ngày" value={draft.to} min={draft.from} disabled={disabled} onChange={(v) => set("to", v)} />
         <SelectField
           id="filter-source"
-          label="Nguồn nạp"
+          label={labels.source}
           value={draft.source}
-          placeholder="Tất cả nguồn nạp"
+          placeholder={labels.sourcePlaceholder}
           options={sourceOptions(sources)}
           disabled={disabled}
           onChange={(v) => set("source", v)}
@@ -245,7 +263,7 @@ export function DepositFilterSheet({
   onOpenChange,
   ...props
 }: FiltersProps & { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { value, sources, onApply, onReset } = props
+  const { value, sources, onApply, onReset, labels = DEPOSIT_LABELS } = props
   const { draft, set, invalidRange } = useDraft(value)
 
   return (
@@ -257,7 +275,7 @@ export function DepositFilterSheet({
       >
         <div aria-hidden className="mx-auto h-1 w-9 rounded-[2px] bg-border" />
         <SheetTitle className="mt-3.5 text-lg leading-[26px] font-bold">
-          Bộ lọc lịch sử nạp tiền
+          {labels.sheetTitle}
         </SheetTitle>
 
         <form
@@ -275,9 +293,9 @@ export function DepositFilterSheet({
           </div>
           <SelectField
             id="sheet-source"
-            label="Nguồn nạp"
+            label={labels.source}
             value={draft.source}
-            placeholder="Tất cả nguồn nạp"
+            placeholder={labels.sourcePlaceholder}
             options={sourceOptions(sources)}
             onChange={(v) => set("source", v)}
           />

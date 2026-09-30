@@ -3,16 +3,16 @@
 import { HexagonIcon, RotateCwIcon, SearchIcon } from "lucide-react"
 import * as React from "react"
 
+import { useNftCount } from "@/components/account/use-account"
 import { EmptyState } from "@/components/app/empty-state"
 import { PeerGridCard } from "@/components/peer/owned/peer-grid-card"
 import { PeerCard, PeerToolbar } from "@/components/peer/peer-shared"
 import { useOwnedPeers } from "@/components/peer/use-peer"
-import { shortAssetCode } from "@/lib/peer"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
-
-const PAGE_SIZE = 8
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { OWNED_PAGE_SIZE } from "@/services/peer.service"
 
 export function OwnedTab({
   tabs,
@@ -29,17 +29,15 @@ export function OwnedTab({
   onPageChange: (page: number) => void
   onBuy: () => void
 }) {
-  const owned = useOwnedPeers()
-  const peers = React.useMemo(() => owned.data ?? [], [owned.data])
-  const q = query.trim().toLowerCase()
-  const filtered = q
-    ? peers.filter((p) =>
-        `${p.product.name} ${shortAssetCode(p.assetCode)} ${p.assetCode}`.toLowerCase().includes(q)
-      )
-    : peers
-  const lastPage = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  // Search and paging run on the server; wait for typing to pause before asking.
+  const q = useDebouncedValue(query.trim())
+  const owned = useOwnedPeers(q, page)
+  const count = useNftCount()
+  const items = owned.data?.data ?? []
+  const total = owned.data?.extra.total ?? 0
+  const lastPage = Math.max(1, owned.data?.extra.last_page ?? Math.ceil(total / OWNED_PAGE_SIZE))
   const current = Math.min(page, lastPage)
-  const items = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
+  const ownsNone = count.data === 0 || (!q && owned.isSuccess && total === 0)
 
   return (
     <>
@@ -56,7 +54,7 @@ export function OwnedTab({
               className="size-full rounded-control bg-transparent pr-4 pl-11 text-[13px] text-foreground outline-none placeholder:text-placeholder focus-visible:ring-3 focus-visible:ring-ring/20 lg:pl-10"
             />
           </label>
-          <span className="hidden text-[13px] text-muted-foreground lg:block">Số lượng {peers.length} Peer</span>
+          <span className="hidden text-[13px] text-muted-foreground lg:block">Số lượng {count.data ?? "…"} Peer</span>
         </div>
       </PeerToolbar>
 
@@ -78,7 +76,7 @@ export function OwnedTab({
               </Button>
             }
           />
-        ) : peers.length === 0 ? (
+        ) : ownsNone ? (
           <EmptyState
             className="flex-1"
             icon={<HexagonIcon strokeWidth={1.6} />}
@@ -90,7 +88,7 @@ export function OwnedTab({
               </Button>
             }
           />
-        ) : filtered.length === 0 ? (
+        ) : total === 0 ? (
           <EmptyState
             className="flex-1"
             icon={<SearchIcon strokeWidth={1.6} />}
@@ -99,7 +97,9 @@ export function OwnedTab({
           />
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4 lg:gap-6">
+            <div
+              className={`grid grid-cols-2 gap-3.5 lg:grid-cols-4 lg:gap-6 ${owned.isPlaceholderData ? "opacity-50 transition-opacity" : ""}`}
+            >
               {items.map((peer) => (
                 <PeerGridCard key={peer.id} peer={peer} />
               ))}
@@ -109,7 +109,7 @@ export function OwnedTab({
         )}
       </PeerCard>
 
-      {peers.length > 0 && (
+      {!ownsNone && (
         <Button size="xl" onClick={onBuy} className="lg:hidden">
           Sở hữu Peer
         </Button>
