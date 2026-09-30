@@ -7,7 +7,7 @@ import * as React from "react"
 import { depositService } from "@/services/deposit.service"
 import type { DepositHistoryFilters, DepositStatus } from "@/types/deposit"
 
-const STATUSES: DepositStatus[] = ["completed", "pending", "failed"]
+const STATUSES: DepositStatus[] = ["completed", "pending", "failed", "cancelled"]
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 /** Applied filters, current page and selected detail id live in the URL. */
