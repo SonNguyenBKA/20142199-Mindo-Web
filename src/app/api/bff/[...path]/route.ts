@@ -13,6 +13,7 @@ const ALLOWED: Record<ForwardMethod, RegExp[]> = {
   GET: rules(
     "me",
     "me/nfts",
+    `me/nfts/${ID}`,
     "account",
     "account/settings",
     "account/sessions",
@@ -21,6 +22,7 @@ const ALLOWED: Record<ForwardMethod, RegExp[]> = {
     "history/deposits",
     `history/deposits/${ID}`,
     `history/deposits/${ID}/receipt`,
+    "history/nfts",
     `history/nfts/${ID}`,
     "invest/config",
     "referrals/commissions",

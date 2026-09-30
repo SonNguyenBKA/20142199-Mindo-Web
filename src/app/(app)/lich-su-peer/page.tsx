@@ -1,9 +1,14 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 
-import { ComingSoon } from "@/components/app/coming-soon"
+import { PeerHistoryView } from "@/components/peer-history/peer-history-view"
 
 export const metadata: Metadata = { title: "Lịch sử Mindo Peer · Mindo" }
 
 export default function Page() {
-  return <ComingSoon />
+  return (
+    <Suspense>
+      <PeerHistoryView />
+    </Suspense>
+  )
 }

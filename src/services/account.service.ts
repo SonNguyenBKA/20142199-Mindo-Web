@@ -58,5 +58,9 @@ export const accountService = {
   applyAgency: (body: AgencyApplicationRequest) =>
     post<NonNullable<AgencyMe>>("/bff/agency/applications", body),
 
-  nftCount: async () => (await get<unknown[]>("/bff/me/nfts")).length,
+  /** Only the total: one item per page, read `extra.total`. */
+  nftCount: async () => {
+    const res = await api.get<{ extra: { total: number } }>("/bff/me/nfts", { params: { page: 1, limit: 1 } })
+    return res.data.extra.total
+  },
 }

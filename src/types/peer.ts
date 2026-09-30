@@ -116,18 +116,32 @@ export type PurchaseOrder = {
   balance_after_vnd: string | null
 }
 
-/** `GET /investor/me/nfts` */
-export type OwnedNft = NftAsset & { product: NftProduct }
-
-/** `GET /investor/history/nfts/:orderId` (fields used by the Peer detail page). */
-export type NftOrderDetail = {
+/** `GET /investor/me/nfts?page=…` and `/me/nfts/:id` — one Peer the investor owns. */
+export type OwnedPeer = {
   id: string
-  transaction_code: string
-  status_label: string
-  amount_vnd: string
-  occurred_at: string
-  overview: { collection_name: string; quantity: number; total_value_vnd: string }
-  nft_source: { seller: string; unit_price_vnd: string }
+  asset_code: string
+  metadata_url: string
+  issued_at: string
+  product: {
+    id: string
+    name: string
+    symbol: string
+    description: string
+    image_url: string
+    total_supply: number
+    sold_count: number
+  }
+  purchase: {
+    order_id: string
+    unit_price_vnd: string
+    order_total_vnd: string
+    quantity: number
+    effective_unit_price_vnd: string
+    effective_unit_price_usd: string
+    usd_vnd_rate: string
+    agency_title: AgencyTierCode | null
+    purchased_at: string
+  }
 }
 
 export type CommissionType = "DIRECT" | "BRANCH"

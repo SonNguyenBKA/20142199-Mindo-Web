@@ -9,7 +9,8 @@ import { peerService, type QuoteInput } from "@/services/peer.service"
 export const peerKeys = {
   products: ["nfts", "products"] as const,
   owned: ["me", "nfts"] as const,
-  order: (id: string) => ["history", "nfts", id] as const,
+  ownedPage: (q: string, page: number) => ["me", "nfts", "page", q, page] as const,
+  ownedDetail: (id: string) => ["me", "nfts", "detail", id] as const,
   config: (productId: string) => ["invest", "config", productId] as const,
   quotes: ["invest", "quote"] as const,
   quote: (input: QuoteInput) =>
@@ -19,14 +20,16 @@ export const peerKeys = {
 export const usePeerProducts = () =>
   useQuery({ queryKey: peerKeys.products, queryFn: peerService.products })
 
-export const useOwnedPeers = () => useQuery({ queryKey: peerKeys.owned, queryFn: peerService.owned })
-
-export const usePeerOrder = (orderId: string | undefined) =>
+/** One page of owned Peers; the previous page stays on screen while the next loads. */
+export const useOwnedPeers = (q: string, page: number) =>
   useQuery({
-    queryKey: peerKeys.order(orderId ?? ""),
-    queryFn: () => peerService.orderDetail(orderId!),
-    enabled: !!orderId,
+    queryKey: peerKeys.ownedPage(q, page),
+    queryFn: () => peerService.owned({ q, page }),
+    placeholderData: keepPreviousData,
   })
+
+export const useOwnedPeer = (id: string) =>
+  useQuery({ queryKey: peerKeys.ownedDetail(id), queryFn: () => peerService.ownedDetail(id) })
 
 /** Price, tiers, balance and KYC for one collection. */
 export const usePurchaseConfig = (productId: string) =>
