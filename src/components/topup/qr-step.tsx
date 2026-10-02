@@ -14,12 +14,10 @@ type QrStepProps = {
   order: TopupOrder
   remaining: number
   onTransferred: () => void
-  onCancel: () => void
-  cancelling?: boolean
   confirming?: boolean
 }
 
-export function QrStep({ order, remaining, onTransferred, onCancel, cancelling, confirming }: QrStepProps) {
+export function QrStep({ order, remaining, onTransferred, confirming }: QrStepProps) {
   const progress = Math.max(0, Math.min(1, remaining / order.ttlSeconds))
   const rows = [
     { label: "Ngân hàng", value: order.bankName },
@@ -45,20 +43,9 @@ export function QrStep({ order, remaining, onTransferred, onCancel, cancelling, 
   )
 
   const actions = (
-    <>
-      <Button size="xl" loading={confirming} onClick={onTransferred}>
-        Tôi đã chuyển khoản
-      </Button>
-      <Button
-        size="xl"
-        variant="outline"
-        loading={cancelling}
-        onClick={onCancel}
-        className="h-11 text-muted-foreground lg:h-14 lg:text-foreground"
-      >
-        Huỷ giao dịch
-      </Button>
-    </>
+    <Button size="xl" loading={confirming} onClick={onTransferred}>
+      Tôi đã chuyển khoản
+    </Button>
   )
 
   return (

@@ -95,12 +95,10 @@ export function SuccessStatus({
 export function ExpiredStatus({
   order,
   onRenew,
-  onCancel,
   renewing,
 }: {
   order: TopupOrder
   onRenew: () => void
-  onCancel: () => void
   renewing?: boolean
 }) {
   return (
@@ -113,14 +111,9 @@ export function ExpiredStatus({
       title="Mã QR đã hết hạn"
       description={`Mã chỉ có hiệu lực ${Math.round(order.ttlSeconds / 60)} phút. Nếu bạn đã chuyển khoản, giao dịch vẫn được đối soát bình thường.`}
       actions={
-        <>
-          <Button size="xl" loading={renewing} onClick={onRenew}>
-            Tạo mã QR mới
-          </Button>
-          <Button size="xl" variant="outline" onClick={onCancel} className="h-11 text-muted-foreground lg:h-14 lg:text-foreground">
-            Huỷ giao dịch
-          </Button>
-        </>
+        <Button size="xl" loading={renewing} onClick={onRenew}>
+          Tạo mã QR mới
+        </Button>
       }
     >
       <SummaryRow label="Số tiền" value={formatVnd(order.amount)} />
