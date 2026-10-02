@@ -3,7 +3,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter, useSearchParams } from "next/navigation"
 import * as React from "react"
-import { toast } from "sonner"
 
 import { MobileHeader } from "@/components/app/mobile-header"
 import { useSession } from "@/components/app/session-context"
@@ -47,7 +46,7 @@ export function TopupView() {
   const [order, setOrder] = React.useState<TopupOrder | null>(null)
   const [creating, setCreating] = React.useState(false)
   const [createError, setCreateError] = React.useState<string | null>(null)
-  const [busy, setBusy] = React.useState<"cancel" | "confirm" | null>(null)
+  const [confirming, setConfirming] = React.useState(false)
   const countdown = useCountdown()
   const { start } = countdown
 
@@ -75,7 +74,7 @@ export function TopupView() {
     queryKey: ["topup-status", order?.id],
     queryFn: () => service.getStatus(order as TopupOrder),
     enabled: polling,
-    // Stop once the deposit is cancelled (here or from another device).
+    // Stop once the deposit is cancelled (e.g. from the app).
     refetchInterval: (q) => (polling && q.state.data?.status !== "cancelled" ? 3000 : false),
   })
   const cancelledElsewhere = status.data?.status === "cancelled"
@@ -107,37 +106,18 @@ export function TopupView() {
     queryClient.removeQueries({ queryKey: ["topup-status"] })
   }
 
-  const cancel = async () => {
-    if (!order) return
-    setBusy("cancel")
-    const outcome = await service.cancel(order).catch((err) => {
-      toast.error(getErrorMessage(err))
-      return null
-    })
-    setBusy(null)
-    if (outcome === "already-settled") {
-      // The money landed first; the next poll moves to the success screen.
-      toast.info("Tiền đã về, đang cập nhật số dư.")
-      setStep("pending")
-      return
-    }
-    if (outcome === "cancelled") {
-      toast.info("Đã huỷ giao dịch nạp tiền.")
-      reset()
-    }
-  }
-
   const confirmTransferred = async () => {
     if (!order) return
-    setBusy("confirm")
+    setConfirming(true)
     await service.markTransferred(order)
-    setBusy(null)
+    setConfirming(false)
     setStep("pending")
   }
 
+  // Leaving the QR does not cancel the deposit: it expires on its own, and money that still arrives is credited.
   const onBack =
     view === "qr" || view === "expired"
-      ? cancel
+      ? reset
       : view === "amount"
         ? undefined
         : () => router.push("/lich-su-nap")
@@ -154,14 +134,12 @@ export function TopupView() {
             order={order}
             remaining={countdown.remaining}
             onTransferred={confirmTransferred}
-            onCancel={cancel}
-            cancelling={busy === "cancel"}
-            confirming={busy === "confirm"}
+            confirming={confirming}
           />
         )}
         {view === "pending" && order && <PendingStatus order={order} />}
         {view === "expired" && order && (
-          <ExpiredStatus order={order} renewing={creating} onRenew={() => create(order.amount)} onCancel={cancel} />
+          <ExpiredStatus order={order} renewing={creating} onRenew={() => create(order.amount)} />
         )}
         {view === "success" && order && (
           <SuccessStatus

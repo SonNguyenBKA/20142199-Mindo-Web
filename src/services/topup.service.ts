@@ -3,14 +3,12 @@
  *
  * - create      → POST /investor/deposits { amount_vnd } + Idempotency-Key (one key per "Tiếp tục")
  * - getStatus   → poll GET /investor/history/deposits/:id every ~3s (no websocket)
- * - cancel      → POST /investor/deposits/:id/cancel; money that still arrives is credited by the BE
  * - QR expiry   → `expires_at` from the BE (VIETQR_QR_TTL_MINUTES, 5–60 minutes)
  *
  * `createMockTopupService` stays for `?demo=` in development.
  */
 
 import { api } from "@/lib/axios"
-import { ApiError } from "@/lib/api-error"
 import { depositService } from "@/services/deposit.service"
 import type { ApiEnvelope } from "@/types/auth"
 
@@ -41,16 +39,12 @@ export type TopupResult = {
   balanceAfter?: number
 }
 
-/** What happened on cancel: cancelled, or the money had already landed (keep polling). */
-export type CancelOutcome = "cancelled" | "already-settled"
-
 export interface TopupService {
   /** `key` makes a double click create one deposit, not two. */
   create(amount: number, key: string): Promise<TopupOrder>
   getStatus(order: TopupOrder): Promise<TopupResult>
   /** Marks that the user says they transferred (the BE reconciles on its own). */
   markTransferred(order: TopupOrder): Promise<void>
-  cancel(order: TopupOrder): Promise<CancelOutcome>
 }
 
 export const QR_TTL_SECONDS = 15 * 60
@@ -110,17 +104,6 @@ export function createVietQrTopupService(): TopupService {
     },
 
     async markTransferred() {},
-
-    async cancel(order) {
-      try {
-        await api.post(`/bff/deposits/${encodeURIComponent(order.id)}/cancel`)
-        return "cancelled"
-      } catch (error) {
-        // 409: paid in the meantime — the next poll shows the success screen.
-        if (error instanceof ApiError && error.status === 409) return "already-settled"
-        throw error
-      }
-    },
   }
 }
 
@@ -171,11 +154,6 @@ export function createMockTopupService(opts: {
         paidAt: new Date().toISOString(),
         balanceAfter: (opts.balance ?? 0) + order.amount,
       }
-    },
-
-    async cancel() {
-      await sleep(300)
-      return "cancelled"
     },
   }
 }
